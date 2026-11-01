@@ -22,3 +22,39 @@
 body{padding-bottom:calc(46px + env(safe-area-inset-bottom,0px))}
 .creator-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:4px;min-height:46px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--paper);color:var(--olive);font-size:12px;line-height:20px;text-align:center;box-shadow:0 -3px 14px #343b3208}
 .creator-bar strong{font-weight:700;color:var(--ink)}
+
+/* Readable text and generous touch targets at every viewport size. */
+:root{--muted:#555d50;--olive:#4c5c3d}
+body{font-size:18px;line-height:1.6;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+.brand{font-size:14px;letter-spacing:1px;line-height:1.5}.brand-mark{flex-shrink:0}
+.header-note{font-size:20px}
+.eyebrow,.album-heading .eyebrow{font-size:14px;letter-spacing:1.5px;line-height:1.6}
+h1{font-size:clamp(40px,6.6vw,88px);line-height:1.15;letter-spacing:-1.5px}
+.description{font-size:20px;line-height:1.8}
+.explore,.video-album,#load-more{font-size:18px;min-height:56px;line-height:1.5}
+.explore{padding:12px 8px;border-bottom:2px solid var(--olive)}
+.video-album{padding:14px 24px}.video-album svg{width:24px;height:24px}
+h2{font-size:34px;line-height:1.4}
+#total{font-size:16px;line-height:1.5;border-color:#858e7b}
+.hint,#status,#progress,footer p,footer a{font-size:18px;line-height:1.7}
+.album-heading{align-items:center;flex-wrap:wrap}
+#load-more{border:2px solid var(--olive);padding:14px 24px;font-weight:600;background:#edf0e6}
+footer .footer-title{font-size:28px}footer a{min-height:52px;padding:12px;text-decoration:underline}
+.creator-bar{font-size:16px;line-height:1.5;min-height:54px;display:block;padding:14px 12px calc(14px + env(safe-area-inset-bottom,0px))}
+.creator-bar strong{margin:0 3px}
+a:focus-visible,button:focus-visible{outline:3px solid #83421a;outline-offset:5px}
+.photo::after{width:40px;height:40px;background-size:22px 22px}
+.pswp__counter{font-size:18px;line-height:54px;text-shadow:0 1px 3px #000}
+.pswp .photo-action{font-size:18px;min-height:56px;min-width:185px;white-space:normal;line-height:1.4}
+.pswp .photo-action svg{width:24px;height:24px}
+.pswp__actions{max-width:calc(100% - 24px)}
+@media(max-width:700px){
+ .masthead{padding:18px 5%}.brand{font-size:14px;letter-spacing:.5px}
+ .intro{padding:40px 0}.flower{display:none}
+ .description{font-size:18px}.eyebrow,.album-heading .eyebrow{font-size:14px;letter-spacing:1px}
+ h2{font-size:30px}.hint{font-size:17px;margin-top:14px}
+ .hero-actions{gap:18px}.video-album{max-width:360px}
+ .pswp__actions{width:calc(100% - 24px);max-width:430px;gap:8px}
+ .pswp .photo-action{font-size:16px;min-width:0;padding:12px 8px;gap:6px}
+ .pswp .photo-action svg{width:20px;height:20px}
+}
