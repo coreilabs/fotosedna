@@ -1,12 +1,18 @@
 """Run before publishing to refresh asset URLs when their contents change."""
 import hashlib
+import argparse
 import re
+import secrets
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--force', action='store_true', help='Renew all versions even when contents are unchanged.')
+args = parser.parse_args()
+release = secrets.token_hex(6) if args.force else ''
 
 def version(path):
-    return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
+    return hashlib.sha256((ROOT / path).read_bytes() + release.encode()).hexdigest()[:12]
 
 app = ROOT / 'assets/app.js'
 source = app.read_text(encoding='utf-8')
