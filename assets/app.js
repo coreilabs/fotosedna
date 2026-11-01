@@ -1,4 +1,4 @@
-import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=cdb1b3312709';
+import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=ac347490a025';
 
 const gallery = document.querySelector('#gallery');
 const status = document.querySelector('#status');
