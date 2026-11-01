@@ -26,9 +26,41 @@ def dimensions(path):
                 return width, height
             f.seek(length - 2, 1)
 
+def webp_dimensions(path):
+    with path.open('rb') as f:
+        header = f.read(12)
+        if header[:4] != b'RIFF' or header[8:12] != b'WEBP':
+            raise ValueError(f'Invalid WebP: {path.name}')
+        while chunk := f.read(8):
+            kind, length = chunk[:4], struct.unpack('<I', chunk[4:])[0]
+            if kind == b'VP8X':
+                data = f.read(10)
+                return 1 + int.from_bytes(data[4:7], 'little'), 1 + int.from_bytes(data[7:10], 'little')
+            if kind == b'VP8 ':
+                data = f.read(10)
+                return struct.unpack('<H', data[6:8])[0] & 0x3fff, struct.unpack('<H', data[8:10])[0] & 0x3fff
+            if kind == b'VP8L':
+                data = f.read(5)
+                bits = int.from_bytes(data[1:], 'little')
+                return (bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1
+            f.seek(length + length % 2, 1)
+    raise ValueError(f'Missing WebP dimensions: {path.name}')
+
 photos = []
-for path in sorted((ROOT / 'assets/gallery').glob('*.jpg')):
-    width, height = dimensions(path)
-    photos.append({'file': path.name, 'width': width, 'height': height})
+state_path = ROOT / 'scripts/webp-progress.json'
+state = json.loads(state_path.read_text(encoding='utf-8')) if state_path.exists() else {}
+originals = {path.name: path for path in (ROOT / 'assets/gallery').glob('*.jpg')}
+webps = {path.stem + '.jpg': path for path in (ROOT / 'assets/gallery-webp').glob('*.webp') if not path.name.endswith('.tmp.webp')}
+for name in sorted(originals.keys() | webps.keys()):
+    path = originals.get(name)
+    webp = webps.get(name)
+    width, height = dimensions(path) if path else webp_dimensions(webp)
+    photo = {'file': name, 'width': width, 'height': height}
+    entry = state.get(name, {})
+    if webp and (not path or (entry.get('mtime_ns') == path.stat().st_mtime_ns
+            and entry.get('source_bytes') == path.stat().st_size and entry.get('webp_bytes') == webp.stat().st_size)):
+        width, height = webp_dimensions(webp)
+        photo.update(webp=webp.name, width=width, height=height)
+    photos.append(photo)
 (ROOT / 'assets/photos.json').write_text(json.dumps(photos, separators=(',', ':')), encoding='utf-8')
 print(f'Catalog: {len(photos)} photos')

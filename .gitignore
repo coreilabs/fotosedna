@@ -1,2 +1,5 @@
 output/
 __pycache__/
+scripts/webp-conversion.lock
+scripts/webp-progress.tmp.json
+assets/gallery-webp/*.tmp.webp

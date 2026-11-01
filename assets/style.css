@@ -58,3 +58,12 @@ a:focus-visible,button:focus-visible{outline:3px solid #83421a;outline-offset:5p
  .pswp .photo-action{font-size:16px;min-width:0;padding:12px 8px;gap:6px}
  .pswp .photo-action svg{width:20px;height:20px}
 }
+
+/* Empty blocks preserve geometry while distant photo elements are released. */
+.gallery{display:flex;flex-direction:column;gap:15px}
+.gallery-block{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;flex:none;overflow-anchor:none}
+@media(min-width:1400px){.gallery-block{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:700px){.gallery{gap:9px}.gallery-block{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}}
+
+/* Long animated jumps would request photos along the entire route. */
+html{scroll-behavior:auto}

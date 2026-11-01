@@ -1,12 +1,63 @@
-import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=201ca953da9d';
+import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=08e868d2db12';
 
 const gallery = document.querySelector('#gallery');
 const status = document.querySelector('#status');
 const more = document.querySelector('#load-more');
 const progress = document.querySelector('#progress');
 let photos = [], shown = 0, viewer, trigger;
+const blocks = [];
+let framePending = false;
+const imageJobs = new Map();
+let wantedImages = [];
+
+function releaseImage(img) {
+  const job = imageJobs.get(img);
+  if (job) {
+    job.controller.abort();
+    if (job.url) URL.revokeObjectURL(job.url);
+    imageJobs.delete(img);
+  }
+  img.removeAttribute('src');
+}
+
+function pumpImages() {
+  let active = [...imageJobs.values()].filter(job => job.loading).length;
+  for (const img of wantedImages) {
+    if (active >= 4) break;
+    if (imageJobs.has(img) || !img.isConnected) continue;
+    const job = { controller: new AbortController(), loading: true };
+    imageJobs.set(img, job); active++;
+    fetch(img.dataset.src, { signal: job.controller.signal, priority: 'high' })
+      .then(response => { if (!response.ok) throw new Error('Image unavailable'); return response.blob(); })
+      .then(blob => {
+        if (imageJobs.get(img) !== job) return;
+        job.url = URL.createObjectURL(blob); img.src = job.url;
+      })
+      .catch(error => {
+        if (error.name !== 'AbortError' && imageJobs.get(img) === job) img.parentElement?.classList.add('failed');
+      })
+      .finally(() => {
+        job.loading = false;
+        if (imageJobs.get(img) === job) pumpImages();
+      });
+  }
+}
+
+function prioritizeImages() {
+  wantedImages = [...gallery.querySelectorAll('img')].filter(img => {
+    const rect = img.getBoundingClientRect();
+    return rect.bottom >= -200 && rect.top <= innerHeight + 200;
+  }).sort((a, b) => {
+    const distance = img => Math.abs((img.getBoundingClientRect().top + img.getBoundingClientRect().bottom) / 2 - innerHeight / 2);
+    return distance(a) - distance(b);
+  });
+  const wanted = new Set(wantedImages);
+  for (const img of imageJobs.keys()) if (!wanted.has(img)) releaseImage(img);
+  pumpImages();
+}
 const number = value => value.toLocaleString('pt-BR');
-const source = index => `assets/gallery/${encodeURIComponent(photos[index].file)}`;
+const originalSource = index => `assets/gallery/${encodeURIComponent(photos[index].file)}`;
+const source = index => photos[index].webp ? `assets/gallery-webp/${encodeURIComponent(photos[index].webp)}` : originalSource(index);
 const photoIndex = () => {
   const match = location.hash.match(/^#foto=(\d+)$/);
   return match ? Number(match[1]) - 1 : -1;
@@ -51,27 +102,74 @@ async function sharePhoto(index, label) {
   }
 }
 
-function addBatch() {
-  const end = Math.min(shown + 40, photos.length);
+function fillBlock(block) {
+  if (block.element.childElementCount) return;
   const fragment = document.createDocumentFragment();
-  for (let i = shown; i < end; i++) {
+  for (let i = block.start; i < block.end; i++) {
     const link = document.createElement('a');
     link.className = 'photo'; link.href = source(i); link.dataset.index = i;
     link.setAttribute('aria-label', `Ampliar foto ${i + 1}`);
     const img = document.createElement('img');
-    img.src = source(i); img.alt = `Recordação de Edna Moreira — foto ${i + 1}`;
+    img.dataset.src = source(i); img.alt = `Recordação de Edna Moreira — foto ${i + 1}`;
     img.width = photos[i].width; img.height = photos[i].height;
     img.loading = 'lazy'; img.decoding = 'async';
     img.addEventListener('error', () => link.classList.add('failed'), { once: true });
     link.append(img); fragment.append(link);
   }
-  gallery.append(fragment); shown = end;
+  block.element.append(fragment);
+}
+
+function refreshBlocks() {
+  framePending = false;
+  if (viewer) return;
+  const margin = window.innerHeight;
+  for (const block of blocks) {
+    const rect = block.element.getBoundingClientRect();
+    const nearby = rect.bottom >= -margin && rect.top <= innerHeight + margin;
+    if (nearby) fillBlock(block);
+    else if (!block.element.contains(document.activeElement)) {
+      // Release sources before detaching, so pending offscreen loads can be abandoned.
+      for (const img of block.element.querySelectorAll('img')) releaseImage(img);
+      block.element.replaceChildren();
+    }
+  }
+  prioritizeImages();
+}
+
+function scheduleBlocks() {
+  if (!framePending) { framePending = true; requestAnimationFrame(refreshBlocks); }
+}
+
+function sizeBlocks() {
+  const columns = innerWidth >= 1400 ? 5 : innerWidth > 700 ? 4 : 2;
+  const gap = innerWidth > 700 ? 15 : 9;
+  const cellWidth = (gallery.clientWidth - gap * (columns - 1)) / columns;
+  for (const block of blocks) {
+    const rows = Math.ceil((block.end - block.start) / columns);
+    block.element.style.height = `${rows * cellWidth * 5 / 4 + (rows - 1) * gap}px`;
+  }
+  refreshBlocks();
+}
+
+function addBatch() {
+  if (shown >= photos.length) return;
+  const end = Math.min(shown + 40, photos.length);
+  const element = document.createElement('div');
+  element.className = 'gallery-block';
+  blocks.push({ element, start: shown, end });
+  gallery.append(element); shown = end;
+  sizeBlocks();
   more.hidden = shown >= photos.length;
   progress.textContent = `${number(shown)} de ${number(photos.length)} recordações`;
 }
 
+window.addEventListener('scroll', scheduleBlocks, { passive: true });
+window.addEventListener('resize', sizeBlocks);
+
 function openPhoto(index, origin) {
   if (index < 0 || index >= photos.length || viewer) return;
+  wantedImages = [];
+  for (const img of imageJobs.keys()) releaseImage(img);
   trigger = origin || document.activeElement;
   viewer = new PhotoSwipe({
     dataSource: photos.map((photo, i) => ({ src: source(i), width: photo.width, height: photo.height, alt: `Recordação de Edna Moreira — foto ${i + 1}` })),
@@ -89,8 +187,8 @@ function openPhoto(index, origin) {
         const download = document.createElement('a');
         download.className = 'photo-action photo-action--download';
         download.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>Baixar foto</span>';
-        download.setAttribute('aria-label', 'Baixar foto original');
-        pswp.on('change', () => { download.href = source(pswp.currIndex); download.download = photos[pswp.currIndex].file; });
+        download.setAttribute('aria-label', 'Baixar foto');
+        pswp.on('change', () => { download.href = source(pswp.currIndex); download.download = photos[pswp.currIndex].webp || photos[pswp.currIndex].file; });
         const share = document.createElement('button');
         share.type = 'button'; share.className = 'photo-action photo-action--share';
         share.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4m-6.8 7 6.8 4"/></svg><span>Compartilhar</span>';
@@ -109,7 +207,7 @@ function openPhoto(index, origin) {
     });
   });
   viewer.on('change', () => history.replaceState(null, '', `#foto=${viewer.currIndex + 1}`));
-  viewer.on('destroy', () => { viewer = undefined; if (photoIndex() >= 0) history.replaceState(null, '', location.pathname + location.search + '#album'); trigger?.focus({ preventScroll: true }); });
+  viewer.on('destroy', () => { viewer = undefined; if (photoIndex() >= 0) history.replaceState(null, '', location.pathname + location.search + '#album'); refreshBlocks(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); });
   viewer.init();
 }
 
