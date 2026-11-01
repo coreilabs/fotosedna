@@ -17,6 +17,9 @@
 .video-album{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:14px 23px;border:1px solid var(--olive);border-radius:8px;background:var(--olive);color:#fff;text-decoration:none;font-size:14px;font-weight:600;box-shadow:0 5px 16px #343b3214;transition:background .2s,box-shadow .2s}
 .video-album svg{width:20px;height:20px;fill:currentColor;flex-shrink:0}
 .video-album:hover{background:#424e32;box-shadow:0 6px 20px #343b3226}
+.instagram-album{background:#fff9f5;color:var(--ink);border-color:#c9aaa1}
+.instagram-album img{width:44px;height:44px;object-fit:contain;flex-shrink:0}
+.instagram-album:hover{background:#fcece5;box-shadow:0 6px 20px #a4336426}
 @media(max-width:700px){.hero-actions{flex-direction:column;gap:16px;margin-top:24px}.video-album{width:100%;max-width:310px}}
 
 body{padding-bottom:calc(46px + env(safe-area-inset-bottom,0px))}
