@@ -1,0 +1,13 @@
+# Recordações Edna Moreira
+
+Álbum estático para https://coreilabs.github.io/fotosedna/.
+
+As fotos originais permanecem em `assets/gallery`. A página carrega lotes de 40 links e usa lazy loading nativo; o visualizador PhotoSwipe pré-carrega apenas fotos vizinhas. Não há miniaturas geradas nem backend.
+
+Após adicionar ou remover fotos JPG, execute `python scripts/catalog.py` para atualizar o catálogo (somente biblioteca padrão do Python).
+
+Para visualizar localmente: `python -m http.server 8080`, depois abra http://localhost:8080. Para publicar no GitHub Pages, envie os arquivos ao repositório `coreilabs/fotosedna` e configure Pages para servir a raiz da branch utilizada.
+
+O botão “Baixar foto” aponta para o arquivo original. Salvar pelo toque prolongado depende do navegador. Links `#foto=N` abrem fotos específicas; mantenha a ordem do catálogo estável se precisar preservar esses links após atualizar o acervo. A prévia social é sempre a do álbum.
+
+PhotoSwipe 5.4.4 distribuído localmente em `assets/vendor`, sob licença MIT.
