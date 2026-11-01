@@ -12,6 +12,45 @@ const photoIndex = () => {
   return match ? Number(match[1]) - 1 : -1;
 };
 
+function trackPhotoShare(event, photo, method) {
+  // Analytics failures must never interrupt sharing.
+  try {
+    window.gtag?.('event', event, {
+      send_to: 'G-ECFESMQ264',
+      content_type: 'image',
+      item_id: photo.file,
+      method,
+    });
+  } catch { /* Keep sharing available when analytics is blocked. */ }
+}
+
+async function sharePhoto(index, label) {
+  const photo = photos[index];
+  const url = new URL(location.href); url.hash = `foto=${index + 1}`;
+  const method = typeof navigator.share === 'function' ? 'native' : 'copy_link';
+  trackPhotoShare('photo_share_click', photo, method);
+  try {
+    if (method === 'native') {
+      await navigator.share({ title: 'Álbum de Fotos de Edna Moreira', url: url.href });
+      // Browser completion does not prove delivery to a recipient.
+      trackPhotoShare('share', photo, method);
+    } else {
+      await navigator.clipboard.writeText(url.href);
+      trackPhotoShare('photo_link_copy', photo, method);
+      label.textContent = 'Link copiado!';
+      setTimeout(() => { label.textContent = 'Compartilhar'; }, 2000);
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      trackPhotoShare('photo_share_cancel', photo, method);
+    } else {
+      trackPhotoShare('photo_share_error', photo, method);
+      window.prompt('Copie o link desta recordação:', url.href);
+      // Opening a copy prompt is not evidence that the link was copied.
+    }
+  }
+}
+
 function addBatch() {
   const end = Math.min(shown + 40, photos.length);
   const fragment = document.createDocumentFragment();
@@ -57,12 +96,13 @@ function openPhoto(index, origin) {
         share.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4m-6.8 7 6.8 4"/></svg><span>Compartilhar</span>';
         const label = share.querySelector('span');
         label.setAttribute('aria-live', 'polite');
+        let sharing = false;
         share.onclick = async () => {
-          const url = new URL(location.href); url.hash = `foto=${pswp.currIndex + 1}`;
+          if (sharing) return;
+          sharing = true;
           try {
-            if (navigator.share) await navigator.share({ title: 'Álbum de Fotos de Edna Moreira', url: url.href });
-            else { await navigator.clipboard.writeText(url.href); label.textContent = 'Link copiado!'; setTimeout(() => { label.textContent = 'Compartilhar'; }, 2000); }
-          } catch (error) { if (error.name !== 'AbortError') window.prompt('Copie o link desta recordação:', url.href); }
+            await sharePhoto(pswp.currIndex, label);
+          } finally { sharing = false; }
         };
         element.append(download, share);
       }
