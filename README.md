@@ -11,3 +11,5 @@ Para visualizar localmente: `python -m http.server 8080`, depois abra http://loc
 O botão “Baixar foto” aponta para o arquivo original. Salvar pelo toque prolongado depende do navegador. Links `#foto=N` abrem fotos específicas; mantenha a ordem do catálogo estável se precisar preservar esses links após atualizar o acervo. A prévia social é sempre a do álbum.
 
 PhotoSwipe 5.4.4 distribuído localmente em `assets/vendor`, sob licença MIT.
+
+Antes de publicar alterações de scripts ou estilos, execute `python scripts/version_assets.py`. O comando atualiza as URLs com hashes do conteúdo para renovar o cache dos visitantes sem desativar o cache das fotos. O catálogo também é revalidado ao abrir a página.

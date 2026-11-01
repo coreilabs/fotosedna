@@ -1,4 +1,4 @@
-import PhotoSwipe from './vendor/photoswipe.esm.min.js';
+import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=542069771beb';
 
 const gallery = document.querySelector('#gallery');
 const status = document.querySelector('#status');
@@ -87,7 +87,7 @@ window.addEventListener('hashchange', () => {
 
 async function load() {
   try {
-    const response = await fetch('assets/photos.json');
+    const response = await fetch('assets/photos.json', { cache: 'no-cache' });
     if (!response.ok) throw new Error('Catalog unavailable');
     photos = await response.json();
     document.querySelector('#total').textContent = number(photos.length);
