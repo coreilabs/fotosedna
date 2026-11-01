@@ -60,7 +60,7 @@ function openPhoto(index, origin) {
         share.onclick = async () => {
           const url = new URL(location.href); url.hash = `foto=${pswp.currIndex + 1}`;
           try {
-            if (navigator.share) await navigator.share({ title: 'Álbum de Fotos — Edna Moreira', url: url.href });
+            if (navigator.share) await navigator.share({ title: 'Álbum de Fotos de Edna Moreira', url: url.href });
             else { await navigator.clipboard.writeText(url.href); label.textContent = 'Link copiado!'; setTimeout(() => { label.textContent = 'Compartilhar'; }, 2000); }
           } catch (error) { if (error.name !== 'AbortError') window.prompt('Copie o link desta recordação:', url.href); }
         };
