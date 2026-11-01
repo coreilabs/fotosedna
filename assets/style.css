@@ -86,3 +86,31 @@ html{scroll-behavior:auto}
 @keyframes photo-shimmer{to{transform:translateX(100%)}}
 @keyframes photo-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.photo.is-loading::before,.photo.is-loading .photo-spinner{animation:none}.photo img{transition:none}}
+
+/* Facebook album theme. */
+:root{--paper:#f0f2f5;--ink:#1c1e21;--muted:#606770;--olive:#1664cc;--line:#d8dde5}
+.masthead{max-width:none;background:#fff;padding:16px 5%;box-shadow:0 2px 8px #1c1e210d}
+.brand{color:#1664cc;font-weight:700;letter-spacing:.3px;font-size:16px}
+.brand-mark{border:0;border-radius:0;width:44px;height:44px;object-fit:contain}
+.header-note{font-family:Arial,Helvetica,sans-serif;font-style:normal;font-size:16px}
+.intro{margin:28px 0 36px;padding:36px 28px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 5px #1c1e2108}
+.facebook-hero{display:block;object-fit:contain;margin:0 auto 16px}
+h1{display:block;font-family:Arial,Helvetica,sans-serif;font-size:clamp(30px,4.4vw,60px);font-weight:700;line-height:1.2;letter-spacing:-1.2px}
+h1 em{display:inline-block;font-style:normal;font-size:.78em;margin-top:8px;color:var(--muted)}
+h2,footer .footer-title{font-family:Arial,Helvetica,sans-serif;font-style:normal;font-weight:700}
+.description{margin:22px 0}.eyebrow{color:#1664cc}
+.hero-actions{gap:14px}.video-album{background:#1877f2;border-color:#1877f2;box-shadow:none;border-radius:8px}
+.video-album:hover{background:#1664cc;box-shadow:0 3px 10px #1877f226}
+.instagram-album{background:#f0f2f5;border-color:var(--line);color:var(--ink)}
+.instagram-album:hover{background:#e4e6eb;box-shadow:none}
+.album-heading{border-top:0;padding-top:0}#total{background:#e7f3ff;border-color:#c3ddff;color:#1664cc}
+.photo{border-radius:10px;background:#e4e6eb}.photo-spinner{border-color:#c3ddff;border-top-color:#1877f2}
+#load-more{background:#1877f2;border-color:#1877f2;color:white;border-radius:8px}
+#load-more:hover{background:#1664cc}
+footer{background:#fff}.creator-bar{background:#fff;color:var(--muted);box-shadow:0 -2px 10px #1c1e210d}
+a:focus-visible,button:focus-visible{outline-color:#1877f2}
+.pswp{--pswp-bg:#101822}.pswp .photo-action{background:#1877f2;border-color:#1877f2}
+.pswp .photo-action:hover{background:#1664cc;border-color:#1664cc}
+.pswp .photo-action--download{background:#fff;border-color:#fff;color:#1c1e21}
+.pswp .photo-action--download:hover{background:#e7f3ff;color:#1664cc}
+@media(max-width:700px){.brand{font-size:13px;gap:8px}.brand-mark{width:36px;height:36px}.intro{margin-top:20px;padding:28px 16px}.facebook-hero{width:88px;height:88px}h1{letter-spacing:-.6px}.hero-actions{gap:14px}.video-album{padding:14px 16px}.description{margin:20px 0}}
