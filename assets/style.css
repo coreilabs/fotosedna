@@ -67,3 +67,19 @@ a:focus-visible,button:focus-visible{outline:3px solid #83421a;outline-offset:5p
 
 /* Long animated jumps would request photos along the entire route. */
 html{scroll-behavior:auto}
+
+/* Skeletons remain in the same reserved frame until image decoding finishes. */
+.photo{background:#e3e6dc}
+.photo img{opacity:0;transition:opacity .2s ease,transform .35s}
+.photo.is-ready img{opacity:1}
+.photo::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 20%,#f7f4eeaa 50%,transparent 80%);transform:translateX(-100%);pointer-events:none}
+.photo.is-loading::before{animation:photo-shimmer 1.6s ease-in-out infinite}
+.photo-loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;color:var(--olive);font-size:16px;font-weight:600;line-height:1.5;text-align:center;pointer-events:none}
+.photo-spinner{width:28px;height:28px;border:3px solid #bcc5b0;border-top-color:var(--olive);border-radius:50%}
+.photo.is-loading .photo-spinner{animation:photo-spin 1s linear infinite}
+.photo.is-ready .photo-loader,.photo.failed .photo-loader,.photo.is-ready::before,.photo.failed::before{display:none}
+.photo:not(.is-ready):not(.failed)::after{display:none}
+.photo.failed::after{content:"Foto indispon\00edvel";font-size:16px;line-height:1.5;color:var(--ink);background:var(--paper)}
+@keyframes photo-shimmer{to{transform:translateX(100%)}}
+@keyframes photo-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.photo.is-loading::before,.photo.is-loading .photo-spinner{animation:none}.photo img{transition:none}}

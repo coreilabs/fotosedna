@@ -1,4 +1,4 @@
-import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=08e868d2db12';
+import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=b96a01771179';
 
 const gallery = document.querySelector('#gallery');
 const status = document.querySelector('#status');
@@ -10,6 +10,15 @@ let framePending = false;
 const imageJobs = new Map();
 let wantedImages = [];
 
+function photoState(img, state) {
+  const link = img.parentElement;
+  if (!link) return;
+  link.classList.toggle('is-ready', state === 'ready');
+  link.classList.toggle('is-loading', state === 'loading');
+  link.classList.toggle('failed', state === 'failed');
+  link.setAttribute('aria-busy', String(state !== 'ready' && state !== 'failed'));
+}
+
 function releaseImage(img) {
   const job = imageJobs.get(img);
   if (job) {
@@ -18,6 +27,7 @@ function releaseImage(img) {
     imageJobs.delete(img);
   }
   img.removeAttribute('src');
+  photoState(img, 'pending');
 }
 
 function pumpImages() {
@@ -27,6 +37,7 @@ function pumpImages() {
     if (imageJobs.has(img) || !img.isConnected) continue;
     const job = { controller: new AbortController(), loading: true };
     imageJobs.set(img, job); active++;
+    photoState(img, 'loading');
     fetch(img.dataset.src, { signal: job.controller.signal, priority: 'high' })
       .then(response => { if (!response.ok) throw new Error('Image unavailable'); return response.blob(); })
       .then(blob => {
@@ -34,7 +45,7 @@ function pumpImages() {
         job.url = URL.createObjectURL(blob); img.src = job.url;
       })
       .catch(error => {
-        if (error.name !== 'AbortError' && imageJobs.get(img) === job) img.parentElement?.classList.add('failed');
+        if (error.name !== 'AbortError' && imageJobs.get(img) === job) photoState(img, 'failed');
       })
       .finally(() => {
         job.loading = false;
@@ -109,12 +120,25 @@ function fillBlock(block) {
     const link = document.createElement('a');
     link.className = 'photo'; link.href = source(i); link.dataset.index = i;
     link.setAttribute('aria-label', `Ampliar foto ${i + 1}`);
+    link.setAttribute('aria-busy', 'true');
     const img = document.createElement('img');
     img.dataset.src = source(i); img.alt = `Recordação de Edna Moreira — foto ${i + 1}`;
     img.width = photos[i].width; img.height = photos[i].height;
     img.loading = 'lazy'; img.decoding = 'async';
-    img.addEventListener('error', () => link.classList.add('failed'), { once: true });
-    link.append(img); fragment.append(link);
+    img.addEventListener('load', async () => {
+      const url = img.getAttribute('src');
+      try {
+        await img.decode();
+        if (url && img.getAttribute('src') === url) photoState(img, 'ready');
+      } catch {
+        if (url && img.getAttribute('src') === url) photoState(img, 'failed');
+      }
+    });
+    img.addEventListener('error', () => { if (img.hasAttribute('src')) photoState(img, 'failed'); });
+    const loader = document.createElement('span');
+    loader.className = 'photo-loader'; loader.setAttribute('aria-hidden', 'true');
+    loader.innerHTML = '<span class="photo-spinner"></span><span>Carregando foto…</span>';
+    link.append(img, loader); fragment.append(link);
   }
   block.element.append(fragment);
 }
