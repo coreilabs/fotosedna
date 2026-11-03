@@ -58,3 +58,20 @@ Propriedade `G-ECFESMQ264`:
 - `photo_share_error`: falha de compartilhamento ou cópia. A janela de cópia manual não conta como cópia confirmada.
 
 Parâmetros: `content_type=image`, `item_id` (nome original estável, mantido após converter) e `method` (`native` ou `copy_link`). Para analisar fotos e métodos, cadastre dimensões personalizadas de escopo de evento para `item_id` e `method` no GA4. Bloqueadores podem impedir a coleta. Os dados começam após publicar e não são retroativos.
+
+### Rastreamento das interações
+
+A função central `track()` envia os eventos com `album_id=fotosedna`. `trackPhoto()` acrescenta `content_type=image`, `item_id` (arquivo original estável) e `photo_number` (posição atual no catálogo).
+
+- `photo_open`: uma abertura do visualizador, com `origin=gallery` ou `direct_link`.
+- `photo_view`: foto selecionada na abertura e a cada mudança por botão, teclado, gesto ou hash. Usa `origin=viewer` nas mudanças internas; imagens pré-carregadas não contam.
+- `photo_download_click`: clique em baixar, com `file_name`; não comprova gravação no dispositivo.
+- Eventos de compartilhamento anteriores preservados, com os mesmos parâmetros de foto e álbum.
+- `navigation_click`: link para outra página, inclusive do mesmo domínio, com `link_name`, `link_url` e `link_domain`.
+- `ui_action`: `action=next_photo`, `previous_photo`, `toggle_zoom`, `close_photo`, `load_more` ou `anchor_navigation`. Fechar conta também por teclado/gesto. `load_more` registra apenas acionamento explícito, com `photos_shown`; carregamento automático não conta como clique.
+
+Um clique no ícone dentro de um controle não duplica seu evento. Uma interação pode produzir eventos de intenção e resultado, como `ui_action` ao avançar e `photo_view` para a foto selecionada; não some todos como cliques. Áreas sem ação não geram evento. Bloqueadores e falta de conexão podem impedir coleta.
+
+No GA4, cadastre dimensões personalizadas de **escopo de evento** para `album_id`, `item_id`, `origin`, `action` e `method`. Para analisar `photo_number` e `photos_shown` numericamente, cadastre métricas personalizadas. Use dimensões nativas de link/arquivo quando disponíveis; cadastre `link_name` se quiser esse rótulo. Monte Explorações com evento e foto nas linhas e contagem de eventos/usuários nos valores. Muitos arquivos distintos podem gerar agrupamento em `(other)`; considere BigQuery para volumes elevados.
+
+Medição otimizada pode coletar eventos automáticos adicionais. Filtre `photo_download_click` e `navigation_click` nos rankings, sem somar `file_download`/`click`. O código não altera configurações da propriedade GA4. Valide parâmetros no DebugView com depuração habilitada na sessão de teste. A coleta começa na versão publicada e não é retroativa.

@@ -1,4 +1,4 @@
-import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=d922b70d70ab';
+import PhotoSwipe from './vendor/photoswipe.esm.min.js?v=57eb32cdaddc';
 
 const gallery = document.querySelector('#gallery');
 const status = document.querySelector('#status');
@@ -74,16 +74,25 @@ const photoIndex = () => {
   return match ? Number(match[1]) - 1 : -1;
 };
 
-function trackPhotoShare(event, photo, method) {
-  // Analytics failures must never interrupt sharing.
+function track(event, parameters = {}) {
+  // Analytics failures must never interrupt the album.
   try {
     window.gtag?.('event', event, {
       send_to: 'G-ECFESMQ264',
-      content_type: 'image',
-      item_id: photo.file,
-      method,
+      album_id: 'fotosedna',
+      ...parameters,
     });
-  } catch { /* Keep sharing available when analytics is blocked. */ }
+  } catch { /* Keep the album available when analytics is blocked. */ }
+}
+
+function trackPhoto(event, index, parameters = {}) {
+  const photo = photos[index];
+  if (!photo) return;
+  track(event, { content_type: 'image', item_id: photo.file, photo_number: index + 1, ...parameters });
+}
+
+function trackPhotoShare(event, photo, method) {
+  trackPhoto(event, photos.indexOf(photo), { method });
 }
 
 async function sharePhoto(index, label) {
@@ -192,6 +201,7 @@ window.addEventListener('resize', sizeBlocks);
 
 function openPhoto(index, origin) {
   if (index < 0 || index >= photos.length || viewer) return;
+  const entryOrigin = origin ? 'gallery' : 'direct_link';
   wantedImages = [];
   for (const img of imageJobs.keys()) releaseImage(img);
   trigger = origin || document.activeElement;
@@ -212,6 +222,9 @@ function openPhoto(index, origin) {
         download.className = 'photo-action photo-action--download';
         download.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>Baixar foto</span>';
         download.setAttribute('aria-label', 'Baixar foto');
+        download.addEventListener('click', () => trackPhoto('photo_download_click', pswp.currIndex, {
+          file_name: photos[pswp.currIndex].webp || photos[pswp.currIndex].file,
+        }));
         pswp.on('change', () => { download.href = source(pswp.currIndex); download.download = photos[pswp.currIndex].webp || photos[pswp.currIndex].file; });
         const share = document.createElement('button');
         share.type = 'button'; share.className = 'photo-action photo-action--share';
@@ -230,7 +243,16 @@ function openPhoto(index, origin) {
       }
     });
   });
-  viewer.on('change', () => history.replaceState(null, '', `#foto=${viewer.currIndex + 1}`));
+  let lastViewedIndex = -1;
+  viewer.on('change', () => {
+    const current = viewer.currIndex;
+    history.replaceState(null, '', `#foto=${current + 1}`);
+    if (current === lastViewedIndex) return;
+    if (lastViewedIndex === -1) trackPhoto('photo_open', current, { origin: entryOrigin });
+    trackPhoto('photo_view', current, { origin: lastViewedIndex === -1 ? entryOrigin : 'viewer' });
+    lastViewedIndex = current;
+  });
+  viewer.on('close', () => trackPhoto('ui_action', viewer.currIndex, { action: 'close_photo', method: 'viewer' }));
   viewer.on('destroy', () => { viewer = undefined; if (photoIndex() >= 0) history.replaceState(null, '', location.pathname + location.search + '#album'); refreshBlocks(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); });
   viewer.init();
 }
@@ -240,7 +262,34 @@ gallery.addEventListener('click', event => {
   if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   event.preventDefault(); openPhoto(Number(link.dataset.index), link);
 });
-more.addEventListener('click', addBatch);
+more.addEventListener('click', () => {
+  track('ui_action', { action: 'load_more', photos_shown: shown });
+  addBatch();
+});
+
+// One delegated handler also covers nested icons and dynamically created controls.
+document.addEventListener('click', event => {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target) return;
+  const control = target.closest('.pswp__button');
+  if (control && viewer) {
+    const action = control.classList.contains('pswp__button--arrow--next') ? 'next_photo'
+      : control.classList.contains('pswp__button--arrow--prev') ? 'previous_photo'
+      : control.classList.contains('pswp__button--zoom') ? 'toggle_zoom' : null;
+    if (action) trackPhoto('ui_action', viewer.currIndex, { action, method: 'button' });
+    return;
+  }
+  const link = target.closest('a[href]');
+  if (!link || link.matches('.photo, .photo-action')) return;
+  const url = new URL(link.href, location.href);
+  if (!['http:', 'https:'].includes(url.protocol)) return;
+  const linkName = link.textContent.replace(/\s+/g, ' ').trim();
+  if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search && url.hash) {
+    track('ui_action', { action: 'anchor_navigation', link_name: linkName, link_url: url.href });
+  } else {
+    track('navigation_click', { link_name: linkName, link_url: url.href, link_domain: url.hostname });
+  }
+}, { capture: true });
 window.addEventListener('hashchange', () => {
   const index = photoIndex();
   if (index >= 0 && index < photos.length) { if (viewer) viewer.goTo(index); else openPhoto(index); }
